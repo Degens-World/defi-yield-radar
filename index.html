@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DeFi Yield Radar — Live Yield Aggregator</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">📡</span>
+        <div>
+          <h1>DeFi Yield Radar</h1>
+          <p class="tagline">Live yield opportunities across every chain</p>
+        </div>
+      </div>
+      <div class="header-meta">
+        <span class="last-updated" id="lastUpdated">Loading...</span>
+        <button class="refresh-btn" id="refreshBtn" onclick="loadData()">↻ Refresh</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-item">
+      <span class="stat-label">Pools Tracked</span>
+      <span class="stat-value" id="statPools">—</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Avg APY</span>
+      <span class="stat-value" id="statAvgApy">—</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Total TVL</span>
+      <span class="stat-value" id="statTvl">—</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Chains</span>
+      <span class="stat-value" id="statChains">—</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Best Stable APY</span>
+      <span class="stat-value highlight" id="statBestStable">—</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Best Degen APY</span>
+      <span class="stat-value highlight fire" id="statBestDegen">—</span>
+    </div>
+  </div>
+
+  <main>
+    <!-- Charts row -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <h2>Top Chains by Avg APY</h2>
+        <canvas id="chainChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h2>APY Distribution</h2>
+        <canvas id="apyDistChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h2>TVL vs APY (Top Pools)</h2>
+        <canvas id="scatterChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="filter-group">
+        <label>Chain</label>
+        <select id="filterChain" onchange="applyFilters()">
+          <option value="">All Chains</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Category</label>
+        <select id="filterCategory" onchange="applyFilters()">
+          <option value="">All Categories</option>
+          <option value="stable">Stablecoins Only</option>
+          <option value="volatile">Volatile Only</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Min APY %</label>
+        <input type="number" id="filterMinApy" value="0" min="0" step="1" onchange="applyFilters()" />
+      </div>
+      <div class="filter-group">
+        <label>Max APY %</label>
+        <input type="number" id="filterMaxApy" value="10000" min="0" step="1" onchange="applyFilters()" />
+      </div>
+      <div class="filter-group">
+        <label>Min TVL ($M)</label>
+        <input type="number" id="filterMinTvl" value="0" min="0" step="0.1" onchange="applyFilters()" />
+      </div>
+      <div class="filter-group">
+        <label>Sort By</label>
+        <select id="sortBy" onchange="applyFilters()">
+          <option value="apy">APY (High→Low)</option>
+          <option value="tvl">TVL (High→Low)</option>
+          <option value="risk">Risk Score (Low→High)</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Search</label>
+        <input type="text" id="searchInput" placeholder="symbol, protocol..." onInput="applyFilters()" />
+      </div>
+    </div>
+
+    <!-- Risk legend -->
+    <div class="risk-legend">
+      <span>Risk:</span>
+      <span class="risk-badge risk-low">Low</span>
+      <span class="risk-badge risk-medium">Medium</span>
+      <span class="risk-badge risk-high">High</span>
+      <span class="risk-badge risk-degen">Degen 🔥</span>
+      <span class="pool-count" id="poolCount"></span>
+    </div>
+
+    <!-- Pool table -->
+    <div class="table-wrapper">
+      <table class="pool-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Pool / Symbol</th>
+            <th>Protocol</th>
+            <th>Chain</th>
+            <th>APY</th>
+            <th>Base APY</th>
+            <th>Reward APY</th>
+            <th>TVL</th>
+            <th>Risk</th>
+            <th>IL Risk</th>
+          </tr>
+        </thead>
+        <tbody id="poolTableBody">
+          <tr><td colspan="10" class="loading-cell">Loading yield data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Load more -->
+    <div class="load-more-row">
+      <button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()" style="display:none">Load More</button>
+    </div>
+
+    <!-- Top Stables section -->
+    <div class="section-header">
+      <h2>🏦 Top Stablecoin Yields</h2>
+      <p class="section-sub">Low-risk yield opportunities on stablecoins — sorted by APY</p>
+    </div>
+    <div class="stable-grid" id="stableGrid">
+      <div class="loading-placeholder">Loading stable pools...</div>
+    </div>
+  </main>
+
+  <footer>
+    <p>Data from <a href="https://defillama.com" target="_blank">DeFiLlama</a> · Auto-refresh every 5 min · Built for Degens.World</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
