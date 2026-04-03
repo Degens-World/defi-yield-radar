@@ -1,5 +1,10 @@
 # DeFi Yield Radar 📡
 
+## Live Demo
+
+**[https://ad-defi-yield-radar-1775133958678.vercel.app](https://ad-defi-yield-radar-1775133958678.vercel.app)**
+
+
 Live yield aggregator pulling data from DeFiLlama across every major DeFi chain.
 
 ## Features
